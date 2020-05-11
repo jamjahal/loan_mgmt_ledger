@@ -1,4 +1,4 @@
-# Savage View API
+# Ledger_API
 
 ## Usage
 
@@ -12,11 +12,16 @@ All responses will have the form
 ```
 
 subsequent response definitions will only detail the expected value of the `data field`
- ### List all Users
+
+ ### Get sum of one or more buckets
 
  **Definition**
 
- `GET /user`
+ `GET /ledger/buckets/sum?loanId={loanId}&bucketids={list of bucket identifiers to sum}`
+
+ Example:
+
+ GET /ledger/buckets/sum?loanId=123&bucketids=accounts-receivable-interest,loan-commitment-liability
 
  **Response**
 
@@ -25,53 +30,27 @@ subsequent response definitions will only detail the expected value of the `data
  ```json
  [
     {
-        "user_id":"123XXX678xxxXf",
-        "username":"ChadPolo"
-        "tracking": [
-        {
-        "identifier":"banana-republic",
-        "name":"Banana Republic",
-        "channels": [
-        {"channel":"twitter",
-        "metrics":
-        {
-            "likes":True,
-            "retweets":True,
-            "hashtags":False
-        }
-        },
-        {"channel":"website",
-        "metrics":{
-            "blog":[{
-                "url": "https://banana_republic.com/blog/free_bananas",
-                "title":"Free Bananas this week at BR",
-                "post_date": "05-05-2020_07:23:55"
-            },
-            {
-                "url": "https://banana_republic.com/blog/new_feature_announcement",
-                "title": "Announcing new line coming this fall",
-                "post_date": "05-06-2020_07:24:55"
-                }]
-        }
-        }
-        ]
-        }
-        ]
+        "accounts-receivable-interest":123.0,
+        "loan-commitment-laibility":32323.32
     }
  ]
-
-### Registering a new company
+```
+### Create new Buckets
 
 **Definition**
 
-`POST /tracking/<identifier>`
+`POST /ledger/buckets/<identifier>`
+
+
 
 **Arguments**
 
 - `"identifier": string` a globally unique identifier for this company
-- `"name": string` a friendly name for this company
-- `"channels": list` the channels that are being tracked for this company
 
+Input structure:
+ {
+    “identifier”: “loan-commitment-liability”,
+}
 
 **Response**
 
@@ -79,26 +58,15 @@ subsequent response definitions will only detail the expected value of the `data
 
 ```json
 {
-    "identifier":"banana-republic",
-    "name":"Banana Republic",
-    "channels": [
-        {"channel":"twitter",
-        "metrics":
-        {
-            "likes":True,
-            "retweets":True,
-            "hashtags":False
-        }
-        },
-    ]
+    "identifier":"loan-commitment-liability",
 }
 ```
 
-### Lookup company being tracked
+### List all entries for a specific loan
 
 **Definition**
 
-`GET /tracking/<identifier>`
+`GET /ledger/entries?loanId={LOAN ID}`
 
 **Response**
 
@@ -107,50 +75,54 @@ subsequent response definitions will only detail the expected value of the `data
 
 ```json
 {
-    "identifier":"banana-republic",
-    "name":"Banana Republic",
-    "channels": [
-        {"channel":"twitter",
-        "metrics":
-        {
-            "likes":True,
-            "retweets":True,
-            "hashtags":False
-        }
-        },
-    ]
+	“entries”: [
+		{
+			“createdAt”: “XXX”,
+			“effectiveDate”: “YYY”,
+			“bucketId”: “ZZZ”,
+			“value”: 123.0
+		},
+		{
+			“createdAt”: “XXX”,
+			“effectiveDate”: “YYY”,
+			“bucketId”: “TTT”,
+			“value”: 123.0
+		},
+	]
 }
 ```
 
-### Delete company
+### Add a new entry pair to the ledger
 
 **Definition**
 
-`DELETE /tracking/<identifier>`
+`POST /ledger/entries - add a new entry pair to the ledger`
+
+**Arguments**
+**Each** entry within the entry pair requires the following arguements:
+
+- `"createdAt": string` a string of date of origination of loan, formatted MM-DD-YYYY
+- `"effectiveDate": string` a datetime when loan becomes effective, formatted MM-DD-YYYY
+- `"credit_bucketId": string` a globally unique identifier for this bucket
+- `"debit_bucketId": string` a globally unique identifier for this bucket
+- `"value": float` the float amount of the loanId
 
 **Response**
 
-- `404 Not Found` if the company does not exist
-- `204 No Content` if the company exists, but there is no content
-
-
-
-**Arguments**
-
-- `"user_id": string` a globally unique identifier for this user
-- `"username": string` a globally unique readable identifier for this user_id
-- `""`
-
-Endpoints:
-    Collection: /user
-        GET - View Users
-        POST - Add Users
-    Companies: /user/tracking
-        GET - View companies being tracked
-        POST - Add company to be tracked
-    Resource: /user/tracking/<identifier>
-        GET - View company data
-        POST - Add company data
-    Resource: /user/tracking/<identifier>/channels
-        GET - View company data
-        POST - Add company data
+- `200 OK` on success
+```json
+[
+    {
+        “createdAt”: “XXX”,
+        “effectiveDate”: “YYY”,
+        “bucketId”: “ZZZ”,
+        “value”: 123.0
+    },
+    {
+        “createdAt”: “XXX”,
+        “effectiveDate”: “YYY”,
+        “bucketId”: “TTT”,
+        “value”: 123.0
+    },
+]
+```
