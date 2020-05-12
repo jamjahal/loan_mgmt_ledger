@@ -1,7 +1,7 @@
 version: '3.4'
 
 services:
-    ledger_api:
+    ledger:
         build: .
         volumes:
             - .:/usr/src/app

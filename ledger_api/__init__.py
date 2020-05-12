@@ -52,19 +52,11 @@ class BucketList(Resource):
     def get(self):
         loanId = request.args['loanId']
         shelf = get_db()
-
-        # DEBUg
-        print('shelf[loanId]', shelf[loanId])
-        print('*'*30)
         buckets = []
-        keys = shelf.keys()
+        keys = list(shelf[loanId])
         for key in keys:
             buckets.append(shelf[key])
 
-        # loan = list(filter(lambda loan: loan.get('loanId') == loanId, shelf))
-        # buckets = list(loan.buckets.values())
-        print('buckets????', buckets)
-        print('='*22)
         return {'message': 'Success', 'data': buckets}, 200
 
     def post(self):
@@ -77,14 +69,16 @@ class BucketList(Resource):
         loanId = args['loanId']
         shelf = get_db()
         # buckets = list(filter(lambda loan: loan['loanId'] == loanId, shelf))
-        if args['loanId'] in shelf:
+        if loanId in shelf:
             temp = shelf[loanId]['buckets']
-            temp.append(args['identifier'])
-            shelf['buckets'] = temp
+            temp.append({"identifier": args['identifier']})
+            shelf[loanId]['buckets'] = temp
         else:
-            shelf[loanId] = {'buckets': [args]}
+            shelf[loanId] = {'buckets': [], 'balances': {}, 'entries': []}
+            shelf[loanId]['buckets'].append({"identifier": args['identifier']})
 
-        return{'message': 'Bucket registered', 'data': args}, 201
+        return{'message': 'Bucket registered',
+               'data': shelf[loanId]['buckets']}, 201
 
 
 class Sum(Resource):
@@ -94,12 +88,15 @@ class Sum(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('loanId', required=True)
         parser.add_argument('bucket_ids', required=True)
+        args = parser.parse_args()
+        loanId = args['loanId']
+        bucket_ids = args['bucket_ids']
         buckets = {}
         # If the bucket_id does not exist in the data store, return a 404 error
         for bucket in bucket_ids:
-            if not(bucket_id in shelf[loanId]['buckets'].items()):
+            if not(bucket in shelf[loanId]['buckets'].values()):
                 return {'message': 'Bucket not found', 'data': {}}, 404
-            buckets[bucket] = shelf[args['loanId']]['balances'][bucket]
+            buckets[bucket] = shelf[loanId]['balances'][bucket]
             # buckets[bucket] = sum([x.get('value')
             #                        for x in shelf[loanId] if x.get('bucket_id') == bucket_id])
 
@@ -110,7 +107,7 @@ class Entry(Resource):
     def post(self):
         credit = {}
         debit = {}
-        parser = reqparse()
+        parser = reqparse.RequestParser()
         parser.add_argument('loanID', required=True)
         parser.add_argument('createdAt', required=True,
                             help="Effective date should be in format: MM-DD-YYYY")
@@ -123,23 +120,37 @@ class Entry(Resource):
         args = parser.parse_args()
         credit['createdAt'] = args['createdAt']
         credit['effectiveDate'] = args['effectiveDate']
-        credit['bucket_id'] = args['credit_bucketId']
+        credit['bucket_id'] = args['creditBucketID']
         credit['value'] = args['value']
 
         debit['createdAt'] = args['createdAt']
         debit['effectiveDate'] = args['effectiveDate']
-        debit['bucket_id'] = args['debit_bucketId']
+        debit['bucket_id'] = args['debitBucketID']
         debit['value'] = -args['value']
 
+        loanId = args['loanID']
         shelf = get_db()
         shelf[loanId]['entries'] = [credit, debit]
-        for bucket in shelf[loanId]['balances']:
-            if bucket == args['debitBucketID']:
-                bucket = bucket+args['value']
-            elif bucket == args['creditBucketID']:
-                bucket = bucket-args['value']
 
-        return{'message': 'Entry pair registered', 'data': [credit, debit]}, 201
+        # If Balance hasn't been created yet, create it
+        if shelf[loanId].get('balances') is None:
+            shelf[loanId]['balances'] = {
+                args['creditBucketID']: args['value'],
+                args['debitBucketID']: -args['value']
+            }
+
+        # If balance has been created, but not these buckets yet, add them
+        elif shelf[loanId]['balances'].get([args['creditBucketID']]) is None:
+            shelf[loanId]['balances'][args['creditBucketID']] = args['value']
+            shelf[loanId]['balances'][args['debitBucketID']] = -args['value']
+
+        # If these buckets exist, credit/debit the value
+        else:
+            shelf[loanId]['balances'][args['creditBucketID']] += args['value']
+            shelf[loanId]['balances'][args['debitBucketID']] -= args['value']
+
+        return{'message': 'Entry pair registered',
+               'data': [credit, debit]}, 201
 
 
 api.add_resource(BucketList, '/ledger/buckets')

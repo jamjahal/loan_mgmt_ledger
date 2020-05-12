@@ -68,7 +68,7 @@ class Loan:
             "debitBucketID": debitBucketID,
             "value": value
         }
-        res = requests.get(url=url, params=params)
+        res = requests.post(url=url, params=params)
         return res.text
 
     # view all buckets belonging to loan
@@ -76,7 +76,6 @@ class Loan:
         url = base_url+'/ledger/buckets'
         params = {"loanId": self.loan_ID}
         res = requests.get(url=url, params=params)
-        print('='*20, res.text)
 
         return res.text
 
@@ -109,7 +108,7 @@ class Loan:
 
         url = base_url+'/ledger/buckets'
         params = {'loanId': self.loan_ID, 'identifier': bucket_name}
-        res = requests.get(url=url, params=params)
+        res = requests.post(url=url, params=params)
         return res.text
 
     # get sums
@@ -121,7 +120,7 @@ class Loan:
         return res.text
 
 
-a_loan = Loan("XXXX", 1100, 0.08, '03-11-2020')
+a_loan = Loan("abcd", 1100, 0.08, '03-11-2020')
 print('principal', a_loan.principal)
 print('ID', a_loan.loan_ID)
 print('originate', a_loan.originate())
