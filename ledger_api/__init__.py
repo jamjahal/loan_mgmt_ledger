@@ -54,8 +54,18 @@ class BucketList(Resource):
         shelf = get_db()
         buckets = []
         keys = list(shelf[loanId])
+
+        print("-"*30)
+        print(" ")
+        print("LoanID", loanId)
+        print("keys", keys)
+
         for key in keys:
-            buckets.append(shelf[key])
+            print('key', key)
+            print('shelf[key]', shelf[loanId][key])
+            print('='*5)
+            print(" ")
+            buckets.append(shelf[loanId][key])
 
         return {'message': 'Success', 'data': buckets}, 200
 
