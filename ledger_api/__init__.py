@@ -23,7 +23,7 @@ api = Api(app)
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = shelve.open("ledger.db")
+        db = g._database = shelve.open("ledger.db", writeback=True)
     return db
 
 
@@ -78,15 +78,18 @@ class BucketList(Resource):
         args = parser.parse_args()
         loanId = args['loanId']
         shelf = get_db()
-        # buckets = list(filter(lambda loan: loan['loanId'] == loanId, shelf))
+
         if loanId in shelf:
-            temp = shelf[loanId]['buckets']
-            temp.append({"identifier": args['identifier']})
-            shelf[loanId]['buckets'] = temp
+            # temp = shelf[loanId]['buckets']
+            # temp.append({"identifier": args['identifier']})
+            # shelf[loanId]['buckets'] = temp
+            shelf[loanId]['buckets'].append({"identifier": args['identifier']})
         else:
             shelf[loanId] = {'buckets': [], 'balances': {}, 'entries': []}
+            # temp = shelf[loanId]['buckets']
+            # temp.append({"identifier": args['identifier']})
+            # shelf[loanId]['buckets'] = temp
             shelf[loanId]['buckets'].append({"identifier": args['identifier']})
-
         return{'message': 'Bucket registered',
                'data': shelf[loanId]['buckets']}, 201
 

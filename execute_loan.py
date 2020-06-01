@@ -25,6 +25,29 @@ class Loan:
         self.daily_interest = interest_rate/365
         self.effective_date = effective_date
 
+    # create buckets
+    def create_bucket(self, bucket_name):
+
+        url = base_url+'/ledger/buckets'
+        params = {'loanId': self.loan_ID, 'identifier': bucket_name}
+        res = requests.post(url=url, params=params)
+        return res.text
+
+    # view all buckets belonging to loan
+    def get_buckets(self):
+        url = base_url+'/ledger/buckets'
+        params = {"loanId": self.loan_ID}
+        res = requests.get(url=url, params=params)
+        return res.text
+
+    # get sums
+    def get_balances(self):
+        url = base_url+'/ledger/buckets/sum'
+        params = {"loanId": self.loan_ID,
+                  "bucket_ids": self.get_buckets()}
+        res = requests.get(url=url, params=params)
+        return res.text
+
     # Originate the loan
     def originate(self):
         self.create_bucket('future-receivable-principal')
@@ -71,15 +94,8 @@ class Loan:
         res = requests.post(url=url, params=params)
         return res.text
 
-    # view all buckets belonging to loan
-    def get_buckets(self):
-        url = base_url+'/ledger/buckets'
-        params = {"loanId": self.loan_ID}
-        res = requests.get(url=url, params=params)
-
-        return res.text
-
     # Enter accrual of interest
+
     def enter_accrual(self, createdAt=date.today().strftime("%m-%d-%Y")):
         """
         Loan name is a variable of class Loan
@@ -102,33 +118,3 @@ class Loan:
         }
         res = requests.post(url=url, params=params)
         return res.text
-
-    # create buckets
-    def create_bucket(self, bucket_name):
-
-        url = base_url+'/ledger/buckets'
-        params = {'loanId': self.loan_ID, 'identifier': bucket_name}
-        res = requests.post(url=url, params=params)
-        return res.text
-
-    # get sums
-    def get_balances(self):
-        url = base_url+'/ledger/buckets/sum'
-        params = {"loanId": self.loan_ID,
-                  "bucket_ids": self.get_buckets()}
-        res = requests.get(url=url, params=params)
-        return res.text
-
-
-a_loan = Loan("abcd", 1100, 0.08, '03-11-2020')
-print('principal', a_loan.principal)
-print('ID', a_loan.loan_ID)
-# print('originate', a_loan.originate())
-a_loan.originate()
-a_loan.activate()
-#
-# # print(a_loan.activate())
-# a_loan.create_bucket('brand_new_bucket')
-# print('get-buckets:', a_loan.get_buckets())
-buckets = a_loan.get_buckets()
-print('buckets', buckets)
